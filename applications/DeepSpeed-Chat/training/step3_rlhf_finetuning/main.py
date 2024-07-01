@@ -395,6 +395,7 @@ def parse_args():
 
 def create_datasets(args, tokenizer, train_phase=3):
     unsupervised_training_enabled = args.unsupervised_dataset_name and args.unsupervised_dataset_config_name
+    print("gongwb create_datasets data_path: ", args.data_path, flush=True)
     prompt_train_dataset, _ = create_prompt_dataset(
         args.local_rank, args.data_path, args.data_split,
         args.data_output_path, train_phase, args.seed, tokenizer,
@@ -489,8 +490,12 @@ def main():
         rlhf_engine.actor.optimizer.quantize_nontrainable_params()
         print_rank_0("Mixed Precision ZeRO++ enabled")
 
+    print("gongwb unsupervised_training_enabled:", unsupervised_training_enabled, flush=True)
     ppo_trainer = DeepSpeedPPOTrainerUnsupervised if unsupervised_training_enabled else DeepSpeedPPOTrainer
+    print("gongwb ppo trainer:", ppo_trainer, flush=True)
+
     trainer = ppo_trainer(rlhf_engine, args)
+    print("gongwb ppo trainer with rlhf_engine:", ppo_trainer, flush=True)
 
     # first number is how many experience-batch to generate, second number is the training batch size, which is the micro-batch size used
     exp_mini_dataset = MiniDataset(args.generation_batches,
@@ -525,6 +530,8 @@ def main():
             out = trainer.generate_experience(batch_prompt['prompt'],
                                               batch_prompt['prompt_att_mask'],
                                               step)
+
+            print("experiences generated successfully", out, flush=True)
 
             training_start = time.time()
             if batch_unsupervised is not None:
@@ -620,6 +627,7 @@ def main():
 
             if args.enable_test_mode and non_overflow_step_count == args.test_stop_step:
                 break
+
 
         if args.enable_test_mode:
             break

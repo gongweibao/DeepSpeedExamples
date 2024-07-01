@@ -63,7 +63,11 @@ class RewardModel(nn.Module):
             **kwargs)
 
         hidden_states = transformer_outputs[0]
+        print("gongwb hidden_states:", hidden_states.shape, flush=True)
+        
         rewards = self.v_head(hidden_states).squeeze(-1)
+        print("gongwb rewards:", rewards.shape, flush=True)
+
         chosen_mean_scores = []
         rejected_mean_scores = []
 
@@ -79,6 +83,7 @@ class RewardModel(nn.Module):
 
         # Compute pairwise loss. Only backprop on the different tokens before padding
         loss = 0.
+        print("gongwb RewardModel bs:", bs, "\t", "seq_len:", seq_len, flush=True)
         for i in range(bs):
             chosen_id = chosen_ids[i]
             rejected_id = rejected_ids[i]
@@ -102,7 +107,9 @@ class RewardModel(nn.Module):
                 ) if len(r_inds) > self.num_padding_at_beginning else seq_len
                 end_ind = max(c_ind, r_ind)
                 divergence_ind = check_divergence[0]
+                
             assert divergence_ind > 0
+            print("gongwb divernce_ind:", divergence_ind,"\t", "end_ind:", end_ind, flush=True)
             c_truncated_reward = chosen_reward[divergence_ind:end_ind]
             r_truncated_reward = rejected_reward[divergence_ind:end_ind]
             chosen_mean_scores.append(
@@ -118,11 +125,15 @@ class RewardModel(nn.Module):
         loss = loss / bs
         chosen_mean_scores = torch.stack(chosen_mean_scores)
         rejected_mean_scores = torch.stack(rejected_mean_scores)
-        return {
+        
+        a = {
             "loss": loss,
             "chosen_mean_scores": chosen_mean_scores,
             "rejected_mean_scores": rejected_mean_scores,
         }
+        
+        print("gongwb RewardModel return:", a, flush=True)
+        return a
 
     def forward_value(self,
                       input_ids=None,

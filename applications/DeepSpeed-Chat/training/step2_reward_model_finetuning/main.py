@@ -181,7 +181,7 @@ def parse_args():
                         help="If > 0, perform evaluation at this interval")
     parser.add_argument("--eval_iters",
                         type=int,
-                        default=100,
+                        default=1,
                         help="Maximum evaluation iterations")
     ## low precision
     parser.add_argument(
@@ -209,6 +209,7 @@ def parse_args():
 
 
 def main():
+    print("gongwb enter main:", flush=True)
     args = parse_args()
 
     if args.local_rank == -1:
@@ -251,6 +252,8 @@ def main():
                                    dropout=args.dropout,
                                    zero_stage=args.zero_stage,
                                    compute_fp32_loss=args.compute_fp32_loss)
+    
+    print("gongwb create first rm_model", flush=True)
 
     # Model bigscience/bloom-560m has large variance at ln_f.weight parameter
     # This makes bf16 finetuning hard.
@@ -283,6 +286,7 @@ def main():
             rm_model = make_model_gradient_checkpointing_compatible(rm_model)
 
     train_phase = 2
+    print("gongwb data_path: ", args.data_path, flush=True)
     train_dataset, eval_dataset = create_prompt_dataset(
         args.local_rank, args.data_path, args.data_split,
         args.data_output_path, train_phase, args.seed, tokenizer,
@@ -306,6 +310,7 @@ def main():
                                  batch_size=args.per_device_eval_batch_size)
 
     def evaluation_reward(model, dataloader, eval_iters):
+        print("gongwb model eval", flush=True)
         model.eval()
         correct_predictions = 0
         total_predictions = 0
@@ -365,6 +370,8 @@ def main():
     if args.gradient_checkpointing:
         rm_model.gradient_checkpointing_enable()
 
+    print("gongwb deepspeed.initialized rm_model: ", rm_model, flush=True)
+
     # Train!
     print_rank_0("***** Running training *****", args.global_rank)
 
@@ -407,6 +414,9 @@ def main():
                     f"diff: {reward_score - reject_score}, acc: {acc}",
                     args.global_rank)
                 rm_model.train()
+                
+            print("gongwb break with one batch", flush=True)
+            break
 
         print_rank_0(
             f"Epoch {epoch+1}/{args.num_train_epochs} with loss {mean_loss/(step+1)}",
@@ -422,6 +432,7 @@ def main():
             f"rejected_last_scores (lower is better) : {reject_score}, "
             f"acc (higher is better) : {acc}", args.global_rank)
         rm_model.tput_timer.update_epoch_count()
+        break
 
     if args.output_dir is not None:
         print_rank_0('saving model ...', args.global_rank)

@@ -98,6 +98,10 @@ class DeepSpeedPPOTrainer():
         prompt_length = prompts.shape[1]
         self.prompt_length = prompt_length
         ans = seq[:, prompt_length:]
+        print("gongwb seq shape:", seq.shape, flush=True)
+        print("gongwb ans shape:", ans.shape, flush=True)
+        print("gongwb prompts shape:", prompts.shape, flush=True)
+
         valid_ans_len = (ans != self.tokenizer.pad_token_id).sum(dim=-1)
 
         if self.args.print_answers and (step % self.args.print_answers_interval
@@ -130,7 +134,9 @@ class DeepSpeedPPOTrainer():
             )
             return None
 
+        print("gongwb out_seq.shape1: ", len(out_seq), flush=True)
         out_seq = torch.cat(out_seq, dim=0)  # concat output in the batch dim
+        print("gongwb out_seq.shape2: ", out_seq.shape, flush=True)
 
         return out_seq
 
@@ -158,6 +164,11 @@ class DeepSpeedPPOTrainer():
                 )
             values = self.critic_model.forward_value(
                 seq, attention_mask, return_value_only=True).detach()[:, :-1]
+
+            print("gongwb output.shape: ", output.logits.shape, flush=True)
+            print("gongwb output_ref.shape: ", output_ref.logits.shape, flush=True)
+            print("gongwb reward_score.shape: ", reward_score.shape, flush=True)
+            print("gongwb values.shape: ", values.shape, flush=True)
 
         logits = output.logits
         logits_ref = output_ref.logits
@@ -213,6 +224,8 @@ class DeepSpeedPPOTrainer():
                                                ref_log_probs, reward_score,
                                                action_mask)
             ends = start + action_mask[:, start:].sum(1) + 1
+            print("gongwb old_rewards.shape: ", old_rewards.shape, flush=True)
+            print("gongwb ends: ", ends, flush=True)
             # we need to zero out the reward and value after the end of the conversation
             # otherwise the advantage/return will be wrong
             for i in range(old_rewards.shape[0]):

@@ -111,7 +111,8 @@ def create_hf_model(model_class,
     model.resize_token_embeddings(int(
         8 *
         math.ceil(len(tokenizer) / 8.0)))  # make the vocab size multiple of 8
-
+    
+    #print("gongwb create_hf_model model_0:", model, flush=True)
     return model
 
 
@@ -131,6 +132,8 @@ def create_critic_model(model_name_or_path,
     start = time.time()
     critic_model = create_hf_model(AutoModel, model_name_or_path, tokenizer,
                                    ds_config, rlhf_training, dropout)
+    print("gongwb create_critic_model:create_hf_model model:", critic_model, flush=True)
+
     end = time.time()
     print_rank_0(f">Creating model from_config took {end - start} seconds",
                  None)
@@ -141,12 +144,17 @@ def create_critic_model(model_name_or_path,
         num_padding_at_beginning=num_padding_at_beginning,
         compute_fp32_loss=compute_fp32_loss)
 
+    print("gongwb create_critic_model:RewardModel model:", critic_model, flush=True)
+
+    print("gongwb rlhf_training", rlhf_training, flush=True)
     if rlhf_training:
         # load critic model from checkpoint
-
-        if not os.path.isdir(model_name_or_path):
-            model_name_or_path = snapshot_download(model_name_or_path)
-        model_ckpt_path = os.path.join(model_name_or_path, 'pytorch_model.bin')
+        print("gongwb model_name_or_path:{}, exist?{}".format(model_name_or_path, 
+                                                           os.path.exists(model_name_or_path)), flush=True)
+        #if not os.path.isdir(model_name_or_path):
+        #    model_name_or_path = snapshot_download(model_name_or_path)
+        model_ckpt_path = os.path.join("/root/.cache/huggingface/hub/models--facebook--opt-350m/snapshots/08ab08cc4b72ff5593870b5d527cf4230323703c/", 'pytorch_model.bin')
+        
         assert os.path.exists(
             model_ckpt_path
         ), f"Cannot find model checkpoint at {model_ckpt_path}"
@@ -168,5 +176,7 @@ def create_critic_model(model_name_or_path,
 
         print_rank_0(f">Creating model from_config took {end - start} seconds",
                      None)
+    
+        print("gongwb critic model_2:", critic_model, flush=True)
 
     return critic_model

@@ -60,6 +60,11 @@ class DeepSpeedRLHFEngine():
         if self.args.critic_gradient_checkpointing:
             self.critic.gradient_checkpointing_enable()
 
+        print("gongwb actor:", self.actor, flush=True)
+        print("gongwb ref:", self.ref, flush=True)
+        print("gongwb critic:", self.critic, flush=True)
+        print("gongwb reward:", self.reward, flush=True)
+
     def _init_actor(self, actor_model_name_or_path):
         stime = log_init("Actor")
 
